@@ -18,8 +18,6 @@ from metagpt.roles.role import Role, RoleContext
 
 from ..memory.associative_memory import AssociativeMemory
 
-from ..reflect.st_reflect import agent_reflect
-
 
 class STRoleContext(RoleContext):
 

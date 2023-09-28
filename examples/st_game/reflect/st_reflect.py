@@ -4,13 +4,15 @@
 
 import asyncio
 import json
+from metagpt.llm import DEFAULT_LLM
 from metagpt.logs import logger
 import time
-from ga_prompt_generator import final_response
 '''
 等待Agent和memory更新，保留相关引用但可以忽略。
 '''
-from ..memory.associative_memory import MemoryBasic
+from ..memory.associative_memory import MemoryBasic, AgentMemory
+from ..memory.retrive import agent_retrive
+
 
 import json
 import time
@@ -25,6 +27,27 @@ async def agent_reflect(memories_list):
 
     for i in A:
         B = await generate_insights_and_evidence(memories_list, question=i)
+
+
+async def final_response(prompt, special_instruction, example_output=None):
+    """
+    通过将特殊指令加入Prompt生成最终的响应。
+
+    参数：
+    - prompt：要生成响应的提示文本。
+    - special_instruction：要加入Prompt的特殊指令。
+    - example_output（可选）：示例输出的JSON字符串。
+
+    返回：
+    生成的最终响应。
+
+    """
+    prompt = '"""\n' + prompt + '\n"""\n'
+    prompt += f"Output the response to the prompt above in json. {special_instruction}\n"
+    if example_output:
+        prompt += "Example output json:\n"
+        prompt += '{"output": "' + str(example_output) + '"}'
+    return await DEFAULT_LLM.aask(prompt)
 
 
 async def generate_focus_point(memories_list: list[MemoryBasic], n=3):
@@ -57,7 +80,7 @@ async def generate_insights_and_evidence(memories_list: list[MemoryBasic], quest
     """
     生成洞察和证据函数：根据问题生成洞察和证据
     """
-    memories_list = await agent_retrieve(agent, question, 50, 10)
+    memories_list = await agent_retrieve(question, 50, 10)
     statements = ""
     for count, mem in enumerate(memories_list):
         statements += f'{str(count)}. {mem.description}\n'
@@ -74,7 +97,7 @@ async def generate_insights_and_evidence(memories_list: list[MemoryBasic], quest
     try:
         insight_list = json.loads(ret)
         for insight, index in insight_list:
-            agent.memory_list.append(MemoryBasic(
+            memories_list.append(MemoryBasic(
                 time.time(), None, insight, None, None))
         return insight_list
     except:

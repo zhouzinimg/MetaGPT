@@ -9,7 +9,7 @@ from stanford_town import StanfordTown
 from roles.st_role import STRole
 
 
-async def startup(idea: str,
+async def startup(idea: str = "Host an activity",
                   investment: float = 30.0,
                   n_round: int = 500):
 
